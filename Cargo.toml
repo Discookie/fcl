@@ -1,0 +1,15 @@
+[package]
+name = "factorio-simple-circuit-creator"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+factorio-blueprint = { git = "https://github.com/Discookie/factorio-blueprint" }
+lalrpop-util = "0.19.6"
+noisy_float = "0.1"
+regex = "1.5"
+
+[build-dependencies]
+lalrpop = "0.19"

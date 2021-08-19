@@ -1,0 +1,108 @@
+use crate::vertical::types::*;
+use std::str::FromStr;
+use lalrpop_util::ParseError;
+
+grammar;
+
+pub VerticalBlock = Semi<Statement>;
+
+Statement: Statement = <out:(<Comma<Name>> "<-")?> <expr:Bracket<Expr>> <wires:("||" <Wires>)?> => Statement {<>};
+
+Expr: Expr = {
+    Arithmetic => Expr::Arithmetic(<>),
+    Decider => Expr::Decider(<>),
+    Constant => Expr::Constant(<>)
+}
+
+Arithmetic: Arithmetic = <out:Signal> "=" <left:SignalOrConstant> <op:ArithmeticOp> <right:SignalOrConstant> => Arithmetic {<>};
+
+ArithmeticOp = Stringify<ArithmeticOp_>;
+ArithmeticOp_ = {
+    "*",
+    "/",
+    "+",
+    "-",
+    "%",
+    "^",
+    "<<",
+    ">>",
+    "AND",
+    "OR",
+    "XOR",
+}
+
+Decider: Decider = {
+    <out:Signal> "=" <left:Signal> <op:DeciderOp> <right:SignalOrConstant> => Decider { <>, copy_count: false },
+
+    <out:Signal> "?" "=" <left:Signal> <op:DeciderOp> <right:SignalOrConstant> => Decider {<>, copy_count: false },
+    <out:Signal> "*" "=" <left:Signal> <op:DeciderOp> <right:SignalOrConstant> => Decider {<>, copy_count: true },
+    <out:Signal> "+" "=" <left:Signal> <op:DeciderOp> <right:SignalOrConstant> => Decider {<>, copy_count: true },
+
+    "1" <out:Signal> "=" <left:Signal> <op:DeciderOp> <right:SignalOrConstant> => Decider {<>, copy_count: false },
+    "N" <out:Signal> "=" <left:Signal> <op:DeciderOp> <right:SignalOrConstant> => Decider {<>, copy_count: true }
+}
+
+DeciderOp = Stringify<DeciderOp_>;
+DeciderOp_ = {
+    "=", "==",
+    "<",
+    "<=",
+    ">",
+    ">=",
+    "!=", "/=", "~="
+}
+
+Constant = Comma<ConstantItem>;
+ConstantItem: ConstantItem = <signal:Signal> "=" <count:ConstantNumber> => ConstantItem {<>};
+
+Wires = Comma<Wire>;
+Wire: Wire = {
+    <loc:Location> "/" "red" => Wire { loc, color: WireColor::Red },
+    <loc:Location> "/" "green" => Wire { loc, color: WireColor::Green }
+}
+
+Location: Location = {
+    Name,
+    Line
+}
+
+Name: Name = ArbitraryString;
+Line: Line = Stringify<r"(L|U)[0-9]+">;
+
+SignalOrConstant: SignalOrConstant = {
+    Signal => SignalOrConstant::Signal(<>),
+    ConstantNumber => SignalOrConstant::Constant(<>)
+}
+
+Signal: Signal = "\"" <type_:ArbitraryString> ":" <name:ArbitraryString> "\"" => Signal {<>};
+ConstantNumber: i32 = {
+    r"[0123456789][0-9]*" =>? i32::from_str(<>).map_err(|_| ParseError::User { error: "number format error" }),
+    "1" =>? i32::from_str(<>).map_err(|_| ParseError::User { error: "number format error" }),
+    r"-[1-9][0-9]*" =>? i32::from_str(<>).map_err(|_| ParseError::User { error: "number format error" })
+}
+
+ArbitraryString: String = Stringify<r"[a-z_][a-z0-9A-Z_-]*">;
+
+Stringify<T>: String = {
+    T => String::from(<>)
+};
+
+Bracket<T>: T = {
+    "(" <Bracket<T>> ")",
+    T
+};
+
+Comma<T>: Vec<T> = {
+    <mut v:(<T> ",")*> <e:T?> => match e {
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
+};
+
+Semi<T>: Vec<T> = {
+    <(<T> ";")*>
+};
+

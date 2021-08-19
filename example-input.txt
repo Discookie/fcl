@@ -1,0 +1,7 @@
+example <- "virtual:signal-O" = 1, "virtual:signal-P" = -30;
+placeholder <- "virtual:signal-Y" = 0 + 1;
+placeholder <- "virtual:signal-Y" = 0 + 1;
+placeholder <- "virtual:signal-Y" = 0 + 1;
+placeholder <- "virtual:signal-Y" = 0 + 1;
+example2 <- "virtual:signal-1" = "virtual:signal-O" + "virtual:signal-P" || example/red;
+example3 <- "virtual:signal-2"? = "virtual:signal-1" > "virtual:signal-P" || example/green, example2/green;
